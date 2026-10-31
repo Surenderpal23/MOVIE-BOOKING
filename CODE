@@ -1,0 +1,406 @@
+
+#include <iostream>
+#include <fstream>
+#include <string>
+#include <limits>
+using namespace std;
+
+class MovieBooking {
+
+private:
+
+    string movies[5] = {
+        "Avengers Endgame",
+        "Interstellar",
+        "Inception",
+        "Jawan",
+        "Animal"
+    };
+
+    string genres[5] = {
+        "Action / Sci-Fi",
+        "Sci-Fi / Drama",
+        "Thriller",
+        "Action",
+        "Drama"
+    };
+
+    int prices[5] = {250, 200, 180, 150, 200};
+
+    string timings[3] = {
+        "10:00 AM",
+        "02:00 PM",
+        "06:00 PM"
+    };
+
+    struct Booking {
+        int bookingID;
+        string customerName;
+        string movieName;
+        string showTime;
+        int tickets;
+        int amount;
+        bool active;
+    };
+
+    Booking bookings[100];
+
+    int bookingCount = 0;
+    int nextID = 1001;
+
+    // Save bookings to file
+    void saveBookings() {
+
+        ofstream file("bookings.txt");
+
+        if (!file) {
+            cout << "\nError saving booking data!\n";
+            return;
+        }
+
+        file << "-------------------------------------------------------\n";
+
+        for (int i = 0; i < bookingCount; i++) {
+
+            file << "BOOKING ID: " << bookings[i].bookingID << endl;
+            file << "NAME: " << bookings[i].customerName << endl;
+            file << "MOVIE: " << bookings[i].movieName << endl;
+            file << "TIME: " << bookings[i].showTime << endl;
+            file << "TICKETS: " << bookings[i].tickets << endl;
+            file << "AMOUNT: " << bookings[i].amount << endl;
+            file << "ACTIVE: " << bookings[i].active << endl;
+
+            file << "-------------------------------------------------------\n";
+        }
+
+        file.close();
+    }
+
+    // Load bookings from file
+    void loadBookings() {
+
+        ifstream file("bookings.txt");
+
+        if (!file)
+            return;
+
+        string line;
+        Booking b;
+
+        while (bookingCount < 100 && getline(file, line)) {
+
+            if (line.find("BOOKING ID: ") != 0)
+                continue;
+
+            b.bookingID = stoi(line.substr(12));
+
+            if (!getline(file, line)) break;
+            b.customerName = line.substr(6);
+
+            if (!getline(file, line)) break;
+            b.movieName = line.substr(7);
+
+            if (!getline(file, line)) break;
+            b.showTime = line.substr(6);
+
+            if (!getline(file, line)) break;
+            b.tickets = stoi(line.substr(9));
+
+            if (!getline(file, line)) break;
+            b.amount = stoi(line.substr(8));
+
+            if (!getline(file, line)) break;
+            b.active = (stoi(line.substr(8)) != 0);
+
+            bookings[bookingCount++] = b;
+
+            if (b.bookingID >= nextID)
+                nextID = b.bookingID + 1;
+        }
+
+        file.close();
+    }
+
+    // Display section heading
+    void heading(string title) {
+
+        cout << "\n-------------------------------------------------------\n";
+        cout << "                 " << title << endl;
+        cout << "-------------------------------------------------------\n";
+    }
+
+public:
+
+    // Constructor
+    MovieBooking() {
+        loadBookings();
+    }
+
+    // Display movies
+    void displayMovies() {
+
+        heading("NOW SHOWING");
+
+        cout << "  No.  Movie                 Genre               Price\n";
+        cout << "-------------------------------------------------------\n";
+
+        for (int i = 0; i < 5; i++) {
+
+            cout << "  " << i + 1 << ".   ";
+
+            cout.width(22);
+            cout << left << movies[i];
+
+            cout.width(20);
+            cout << left << genres[i];
+
+            cout << "Rs. " << prices[i] << endl;
+        }
+
+        cout << "-------------------------------------------------------\n";
+    }
+
+    // Display show timings
+    void displayTimings() {
+
+        heading("AVAILABLE SHOW TIMINGS");
+
+        for (int i = 0; i < 3; i++) {
+            cout << "  " << i + 1 << ". " << timings[i] << endl;
+        }
+
+        cout << "-------------------------------------------------------\n";
+    }
+
+    // Book tickets
+    void bookTicket() {
+
+        if (bookingCount >= 100) {
+            cout << "\nBooking limit reached!\n";
+            return;
+        }
+
+        int movieChoice, timeChoice, ticketCount;
+
+        Booking b;
+
+        displayMovies();
+
+        cout << "\nSelect Movie (1-5): ";
+        if (!(cin >> movieChoice)) {
+            cin.clear();
+            cin.ignore(numeric_limits<streamsize>::max(), '\n');
+            cout << "\nInvalid input!\n";
+            return;
+        }
+
+        if (movieChoice < 1 || movieChoice > 5) {
+            cout << "\nInvalid movie selection!\n";
+            return;
+        }
+
+        displayTimings();
+
+        cout << "\nSelect Show Timing (1-3): ";
+        if (!(cin >> timeChoice)) {
+            cin.clear();
+            cin.ignore(numeric_limits<streamsize>::max(), '\n');
+            cout << "\nInvalid input!\n";
+            return;
+        }
+
+        if (timeChoice < 1 || timeChoice > 3) {
+            cout << "\nInvalid timing selection!\n";
+            return;
+        }
+
+        cin.ignore(numeric_limits<streamsize>::max(), '\n');
+
+        cout << "\nEnter Customer Name: ";
+        getline(cin, b.customerName);
+
+        if (b.customerName.empty()) {
+            cout << "\nCustomer name cannot be empty!\n";
+            return;
+        }
+
+        cout << "Enter Number of Tickets (1-10): ";
+
+        if (!(cin >> ticketCount)) {
+            cin.clear();
+            cin.ignore(numeric_limits<streamsize>::max(), '\n');
+            cout << "\nInvalid input!\n";
+            return;
+        }
+
+        if (ticketCount < 1 || ticketCount > 10) {
+            cout << "\nInvalid ticket quantity!\n";
+            return;
+        }
+
+        b.bookingID = nextID++;
+        b.movieName = movies[movieChoice - 1];
+        b.showTime = timings[timeChoice - 1];
+        b.tickets = ticketCount;
+        b.amount = ticketCount * prices[movieChoice - 1];
+        b.active = true;
+
+        bookings[bookingCount++] = b;
+
+        saveBookings();
+
+        // Booking confirmation
+        heading("BOOKING CONFIRMED!");
+
+        cout << "  Booking ID   : " << b.bookingID << endl;
+        cout << "  Customer     : " << b.customerName << endl;
+        cout << "  Movie        : " << b.movieName << endl;
+        cout << "  Show Time    : " << b.showTime << endl;
+        cout << "  Tickets      : " << b.tickets << endl;
+        cout << "  Total Amount : Rs. " << b.amount << endl;
+
+        cout << "-------------------------------------------------------\n";
+        cout << "             Enjoy Your Movie, " << b.customerName << "!\n";
+        cout << "-------------------------------------------------------\n";
+    }
+
+    // View booking
+    void viewBooking() {
+
+        int id;
+        bool found = false;
+
+        cout << "\nEnter Your Booking ID: ";
+
+        if (!(cin >> id)) {
+            cin.clear();
+            cin.ignore(numeric_limits<streamsize>::max(), '\n');
+            cout << "\nInvalid input!\n";
+            return;
+        }
+
+        for (int i = 0; i < bookingCount; i++) {
+
+            if (bookings[i].bookingID == id &&
+                bookings[i].active) {
+
+                found = true;
+
+                heading("YOUR MOVIE TICKET");
+
+                cout << "  Booking ID   : " << bookings[i].bookingID << endl;
+                cout << "  Customer     : " << bookings[i].customerName << endl;
+                cout << "  Movie        : " << bookings[i].movieName << endl;
+                cout << "  Show Time    : " << bookings[i].showTime << endl;
+                cout << "  Tickets      : " << bookings[i].tickets << endl;
+                cout << "  Total Amount : Rs. " << bookings[i].amount << endl;
+
+                cout << "-------------------------------------------------------\n";
+
+                break;
+            }
+        }
+
+        if (!found) {
+            cout << "\nBooking not found or already cancelled!\n";
+        }
+    }
+
+    // Cancel booking
+    void cancelBooking() {
+
+        int id;
+
+        cout << "\nEnter Booking ID: ";
+
+        if (!(cin >> id)) {
+            cin.clear();
+            cin.ignore(numeric_limits<streamsize>::max(), '\n');
+            cout << "\nInvalid input!\n";
+            return;
+        }
+
+        for (int i = 0; i < bookingCount; i++) {
+
+            if (bookings[i].bookingID == id &&
+                bookings[i].active) {
+
+                bookings[i].active = false;
+
+                saveBookings();
+
+                cout << "\n-------------------------------------------------------\n";
+                cout << "             BOOKING CANCELLED SUCCESSFULLY\n";
+                cout << "-------------------------------------------------------\n";
+
+                return;
+            }
+        }
+
+        cout << "\nBooking ID not found or already cancelled!\n";
+    }
+
+};
+
+// Main function
+int main() {
+
+    MovieBooking system;
+
+    int choice;
+
+    do {
+
+        cout << "\n";
+        cout << "-------------------------------------------------------\n";
+        cout << "                       CINEMAX\n";
+        cout << "                Movie Ticket Booking System\n";
+        cout << "-------------------------------------------------------\n";
+
+        cout << "  1. Browse Movies\n";
+        cout << "  2. Book Movie Tickets\n";
+        cout << "  3. View My Booking\n";
+        cout << "  4. Cancel Booking\n";
+        cout << "  5. Exit\n";
+
+        cout << "-------------------------------------------------------\n";
+        cout << "  Enter Your Choice: ";
+
+        if (!(cin >> choice)) {
+            cin.clear();
+            cin.ignore(numeric_limits<streamsize>::max(), '\n');
+            cout << "\nInvalid input! Please enter a number.\n";
+            continue;
+        }
+
+        switch (choice) {
+
+            case 1:
+                system.displayMovies();
+                break;
+
+            case 2:
+                system.bookTicket();
+                break;
+
+            case 3:
+                system.viewBooking();
+                break;
+
+            case 4:
+                system.cancelBooking();
+                break;
+
+            case 5:
+                cout << "\nThank you for visiting CINEMAX!\n";
+                cout << "Have a wonderful day!\n";
+                break;
+
+            default:
+                cout << "\nInvalid choice! Please select 1-5.\n";
+        }
+
+    } while (choice != 5);
+
+    return 0;
+}
